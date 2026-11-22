@@ -46,5 +46,6 @@ jobs:
           DISCORD_WEBHOOK_INTERNATIONAL: ${{ secrets.DISCORD_WEBHOOK_INTERNATIONAL }}
           DISCORD_WEBHOOK_USD: ${{ secrets.DISCORD_WEBHOOK_USD }}
           DRY_RUN: ${{ secrets.DRY_RUN || 'false' }}
+          PUBLICATION_ENABLED: ${{ secrets.PUBLICATION_ENABLED || 'false' }}
           LOG_LEVEL: info
         run: npm run ${{ github.event.inputs.action }}

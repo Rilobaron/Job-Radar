@@ -79,6 +79,81 @@ export class PublicationRepository {
     }
   }
 
+  // Consulta não-destrutiva para simulação (DRY_RUN): apenas lê sem alterar status ou bloquear
+  async peekPendingPublications(
+    channelId: string,
+    limit: number,
+  ): Promise<Array<{ publication: PublicationRecord; job: NormalizedJob }>> {
+    const query = `
+      SELECT
+        p.id as pub_id, p.job_id, p.channel_id, p.status as pub_status,
+        p.attempts_count, p.discord_message_id, p.last_error,
+        j.*
+      FROM publications p
+      JOIN jobs j ON j.id = p.job_id
+      WHERE p.channel_id = $1
+        AND (
+          p.status IN ('PENDING', 'RETRY')
+          OR (p.status = 'SENDING' AND p.scheduled_at <= NOW() - interval '5 minutes')
+        )
+        AND p.scheduled_at <= NOW()
+        AND j.status = 'active'
+        AND j.is_historical = false
+      ORDER BY p.scheduled_at ASC
+      LIMIT $2;
+    `;
+
+    const res = await this.pool.query(query, [channelId, limit]);
+    return res.rows.map((row) => ({
+      publication: {
+        id: Number(row.pub_id),
+        jobId: String(row.job_id),
+        channelId: String(row.channel_id),
+        status: row.pub_status as PublicationStatus,
+        attemptsCount: Number(row.attempts_count),
+        discordMessageId: row.discord_message_id
+          ? String(row.discord_message_id)
+          : null,
+        lastError: row.last_error ? String(row.last_error) : null,
+      },
+      job: {
+        id: String(row.id),
+        provider: String(row.provider),
+        providerJobId: String(row.provider_job_id),
+        company: String(row.company),
+        title: String(row.title),
+        description: String(row.description),
+        location: row.location ? String(row.location) : null,
+        remoteType: row.remote_type,
+        seniority: row.seniority,
+        technologies: [],
+        salaryMin: row.salary_min ? Number(row.salary_min) : null,
+        salaryMax: row.salary_max ? Number(row.salary_max) : null,
+        currency: row.currency ? String(row.currency) : null,
+        country: row.country ? String(row.country) : null,
+        eligibleRegions: Array.isArray(row.eligible_regions)
+          ? row.eligible_regions
+          : [],
+        employmentType: row.employment_type
+          ? String(row.employment_type)
+          : null,
+        applyUrl: String(row.apply_url),
+        sourceUrl: String(row.source_url),
+        canonicalHash: String(row.canonical_hash),
+        qualityScore: Number(row.quality_score),
+        inferredData:
+          (row.inferred_data as NormalizedJob["inferredData"]) || {},
+        publishedAt: row.published_at
+          ? new Date(String(row.published_at)).toISOString()
+          : null,
+        discoveredAt: new Date(String(row.discovered_at)).toISOString(),
+        lastSeenAt: new Date(String(row.last_seen_at)).toISOString(),
+        status: row.status,
+        isHistorical: Boolean(row.is_historical),
+      },
+    }));
+  }
+
   async getPendingPublications(
     channelId: string,
     limit: number,

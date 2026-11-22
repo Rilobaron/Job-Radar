@@ -20,8 +20,9 @@ export class PublisherService {
   constructor(
     private pubRepo: PublicationRepository = new PublicationRepository(),
     private isDryRun: boolean = false,
+    private minIntervalMs: number = 800,
   ) {
-    this.discordClient = new DiscordClient(this.isDryRun);
+    this.discordClient = new DiscordClient(this.isDryRun, this.minIntervalMs);
     this.spamFilter = new SpamFilter();
   }
 
@@ -40,7 +41,7 @@ export class PublisherService {
       isDryRun = true;
     }
 
-    this.discordClient = new DiscordClient(isDryRun);
+    this.discordClient = new DiscordClient(isDryRun, this.minIntervalMs);
 
     const summary: PublisherSummary = {
       totalAttempted: 0,
@@ -84,11 +85,11 @@ export class PublisherService {
       }
 
       // 3. Busca publicações pendentes respeitando limite por execução
+      // Em simulação DRY_RUN, faz leitura limpa não-destrutiva sem reservar/bloquear registros
       const maxPerRun = this.spamFilter.getMaxPerRun();
-      const pendings = await this.pubRepo.getPendingPublications(
-        channel.id,
-        maxPerRun,
-      );
+      const pendings = isDryRun
+        ? await this.pubRepo.peekPendingPublications(channel.id, maxPerRun)
+        : await this.pubRepo.getPendingPublications(channel.id, maxPerRun);
 
       if (pendings.length === 0) {
         logger.debug(
@@ -111,7 +112,24 @@ export class PublisherService {
           embedPayload,
         );
 
-        // Registra tentativa detalhada para auditoria
+        // Se for DRY_RUN, NÃO persistimos tentativas, não alteramos status no banco
+        // e não poluímos o histórico. As publicações permanecem intactas em PENDING.
+        if (isDryRun) {
+          if (result.success) {
+            summary.totalSent++;
+            logger.info(
+              `[DRY-RUN] Simulação: Vaga "${item.job.title}" seria publicada no canal ${channel.name}.`,
+            );
+          } else {
+            summary.totalFailed++;
+            logger.warn(
+              `[DRY-RUN] Simulação: Vaga "${item.job.title}" falharia no canal ${channel.name}: ${result.error}`,
+            );
+          }
+          continue;
+        }
+
+        // Fluxo REAL de envio e persistência de auditoria
         await this.pubRepo.recordAttempt(
           pubId,
           item.publication.attemptsCount + 1,

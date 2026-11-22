@@ -181,6 +181,16 @@ describe("E2E Full Pipeline Simulation", () => {
       enabled: true,
     });
 
+    process.env.PUBLICATION_ENABLED = "true";
+    process.env.DISCORD_WEBHOOK_SENIOR =
+      "https://discord.com/api/webhooks/mock/senior";
+    process.env.DISCORD_WEBHOOK_JUNIOR =
+      "https://discord.com/api/webhooks/mock/junior";
+    process.env.DISCORD_WEBHOOK_INTERNATIONAL =
+      "https://discord.com/api/webhooks/mock/intl";
+    process.env.DISCORD_WEBHOOK_USD =
+      "https://discord.com/api/webhooks/mock/usd";
+
     collectorService = new CollectorService(
       jobRepo,
       sourceRepo,
@@ -189,11 +199,16 @@ describe("E2E Full Pipeline Simulation", () => {
       new SpamFilter(20),
     );
 
-    publisherService = new PublisherService(pubRepo, true); // Modo DRY_RUN
+    publisherService = new PublisherService(pubRepo, false, 0); // Modo de publicação ativa com Discord mockado (sem delay de intervalo)
   });
 
   afterEach(() => {
     global.fetch = originalFetch;
+    delete process.env.PUBLICATION_ENABLED;
+    delete process.env.DISCORD_WEBHOOK_SENIOR;
+    delete process.env.DISCORD_WEBHOOK_JUNIOR;
+    delete process.env.DISCORD_WEBHOOK_INTERNATIONAL;
+    delete process.env.DISCORD_WEBHOOK_USD;
   });
 
   it("deve executar o fluxo completo e garantir idempotência sem duplicações indevidas", async () => {
@@ -204,7 +219,7 @@ describe("E2E Full Pipeline Simulation", () => {
       ),
     );
 
-    // Mock do fetch externo do Greenhouse
+    // Mock do fetch externo do Greenhouse e do Discord
     global.fetch = vi.fn().mockImplementation((url: string) => {
       if (url.includes("greenhouse.io")) {
         return Promise.resolve({
@@ -213,7 +228,15 @@ describe("E2E Full Pipeline Simulation", () => {
           text: async () => JSON.stringify(fixture),
         });
       }
-      return Promise.reject(new Error("Unknown URL"));
+      if (url.includes("discord.com")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ id: "disc_msg_123" }),
+          json: async () => ({ id: "disc_msg_123" }),
+        });
+      }
+      return Promise.reject(new Error("Unknown URL: " + url));
     });
 
     // 1º Ciclo de Coleta (Novo lote)

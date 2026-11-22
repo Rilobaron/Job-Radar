@@ -1,11 +1,11 @@
-# 🎯 JobRadar v1.0 — Sistema Automatizado de Vagas para Discord
+# 🎯 JobRadar v1.0.1 — Sistema Automatizado de Vagas para Discord
 
-[![CI Tests](https://github.com/job-radar/job-radar/actions/workflows/test.yml/badge.svg)](https://github.com/job-radar/job-radar/actions)
+[![CI Tests](https://github.com/Rilobaron/Job-Radar/actions/workflows/test.yml/badge.svg)](https://github.com/Rilobaron/Job-Radar/actions)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node: LTS](https://img.shields.io/badge/Node.js-20%2B-green.svg)](https://nodejs.org/)
 
-O **JobRadar v1.0** é uma plataforma open source, moderna e altamente confiável para **descoberta, normalização, enriquecimento, persistência e distribuição automatizada de vagas reais de tecnologia** diretamente em canais segmentados de servidores Discord.
+O **JobRadar v1.0.1** é uma plataforma open source, moderna e altamente confiável para **descoberta, normalização, enriquecimento, persistência e distribuição automatizada de vagas reais de tecnologia** diretamente em canais segmentados de servidores Discord.
 
 O sistema atende uma **comunidade pública de desenvolvedores**, fornecendo apenas oportunidades com URLs originais de candidatura, sem fabricação de dados e com rigorosa prevenção de duplicações e spam.
 
@@ -86,8 +86,8 @@ Consulte [ARCHITECTURE.md](file:///c:/Users/Pichau/Desktop/Desenvolvimento/Job R
 
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/job-radar/job-radar.git
-cd job-radar
+git clone https://github.com/Rilobaron/Job-Radar.git
+cd Job-Radar
 
 # 2. Instale as dependências
 npm install

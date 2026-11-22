@@ -27,5 +27,11 @@ jobs:
       - name: Typecheck (Build)
         run: npm run build
 
+      - name: Linter (ESLint)
+        run: npm run lint
+
+      - name: Verificação de Formatação (Prettier)
+        run: npm run format:check
+
       - name: Testes Automatizados
         run: npm run test

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import pg from "pg";
 import { JobRepository } from "../../src/persistence/job-repository.js";
 import { PublicationRepository } from "../../src/persistence/publication-repository.js";
@@ -16,6 +16,20 @@ describe("PostgreSQL Real Integration & Concurrency", () => {
   let _pubRepo: PublicationRepository;
   let _sourceRepo: SourceRepository;
   let isRealDbAvailable = false;
+
+  const cleanupTestData = async () => {
+    if (!pool || !isRealDbAvailable) return;
+    try {
+      await pool.query(
+        "DELETE FROM publications WHERE job_id LIKE 'real_pg_%'",
+      );
+      await pool.query("DELETE FROM job_tags WHERE job_id LIKE 'real_pg_%'");
+      await pool.query("DELETE FROM jobs WHERE id LIKE 'real_pg_%'");
+      await pool.query("DELETE FROM sources WHERE id LIKE 'src_rollback_%'");
+    } catch {
+      // ignore
+    }
+  };
 
   beforeAll(async () => {
     if (!testDbUrl) {
@@ -42,6 +56,8 @@ describe("PostgreSQL Real Integration & Concurrency", () => {
       jobRepo = new JobRepository(pool);
       _pubRepo = new PublicationRepository(pool);
       _sourceRepo = new SourceRepository(pool);
+
+      await cleanupTestData();
     } catch (err) {
       console.log(
         `\n⚠️  [POSTGRES-REAL] Não foi possível conectar ao banco em ${testDbUrl}: ${(err as Error).message}. Testes com PostgreSQL real serão pulados.`,
@@ -54,7 +70,12 @@ describe("PostgreSQL Real Integration & Concurrency", () => {
     }
   });
 
+  beforeEach(async () => {
+    await cleanupTestData();
+  });
+
   afterAll(async () => {
+    await cleanupTestData();
     if (pool) {
       await pool.end().catch(() => {});
     }
