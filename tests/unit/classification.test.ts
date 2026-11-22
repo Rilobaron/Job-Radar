@@ -165,7 +165,7 @@ describe("Classification Engine", () => {
       expect(res.isUsdSalary).toBe(false);
     });
 
-    it("não deve classificar vaga remota nos EUA como disponível para o Brasil", () => {
+    it("não deve classificar vaga remota nos EUA como disponível para o Brasil ou Internacional aberta", () => {
       const resUs = classifyLocation(
         "Remote, United States",
         "Must be authorized to work in the US. No international relocation.",
@@ -173,7 +173,9 @@ describe("Classification Engine", () => {
       );
       expect(resUs.isBrazil).toBe(false);
       expect(resUs.isBrazilRemote).toBe(false);
+      expect(resUs.isInternational).toBe(false);
       expect(resUs.eligibleRegions).not.toContain("Brazil");
+      expect(resUs.eligibleRegions).not.toContain("International");
     });
 
     it("não deve confundir cidades como Bristol ou Bridgeport com Brasil por causa de 'BR'", () => {

@@ -169,4 +169,41 @@ describe("JobRouter", () => {
 
     expect(ids).not.toContain("channel_usd");
   });
+
+  it("não deve rotear para channel_international vagas remotas restritas aos EUA ou outro país", () => {
+    const jobUsOnly: NormalizedJob = {
+      id: "j4",
+      provider: "greenhouse",
+      providerJobId: "4",
+      company: "US Domestic Corp",
+      title: "Mid-level React Developer",
+      description: "Must reside in the US. No international applicants.",
+      location: "Remote, United States",
+      remoteType: "remote",
+      seniority: "mid",
+      technologies: ["React"],
+      salaryMin: null,
+      salaryMax: null,
+      currency: null,
+      country: "United States",
+      eligibleRegions: [], // Não elegível internacionalmente
+      employmentType: "Full-time",
+      applyUrl: "https://example.com/apply",
+      sourceUrl: "https://example.com",
+      canonicalHash: "hash4",
+      qualityScore: 80,
+      inferredData: {},
+      publishedAt: null,
+      discoveredAt: "2026-03-01",
+      lastSeenAt: "2026-03-01",
+      status: "active",
+    };
+
+    const routes = router.routeJob(jobUsOnly);
+    const ids = routes.map((r) => r.id);
+
+    expect(ids).toContain("channel_mid");
+    expect(ids).not.toContain("channel_international");
+    expect(ids).not.toContain("channel_brazil_remote");
+  });
 });

@@ -106,10 +106,24 @@ export class DiscordClient {
         id?: string;
       };
 
+      const messageId =
+        responseData.id ||
+        (response.status === 204 ? `msg_${Date.now()}` : undefined);
+
+      if (!messageId) {
+        return {
+          success: false,
+          statusCode: response.status,
+          durationMs,
+          error:
+            "Discord retornou sucesso HTTP mas não forneceu ID de confirmação da mensagem.",
+        };
+      }
+
       return {
         success: true,
         statusCode: response.status,
-        messageId: responseData.id || `msg_${Date.now()}`,
+        messageId,
         durationMs,
       };
     } catch (err: unknown) {

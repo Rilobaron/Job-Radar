@@ -272,4 +272,76 @@ describe("DRY_RUN Non-Destructive Guarantee & Safety Lock", () => {
     const peeks = await pubRepo.peekPendingPublications("channel_junior", 5);
     expect(peeks).toHaveLength(0);
   });
+
+  it("deve evitar mensagem duplicada no Discord quando múltiplos canais lógicos compartilham o mesmo webhook", async () => {
+    process.env.PUBLICATION_ENABLED = "true";
+    process.env.DRY_RUN = "false";
+    const sharedWebhookUrl =
+      "https://discord.com/api/webhooks/shared-id/shared-token";
+    process.env.DISCORD_WEBHOOK_JUNIOR = sharedWebhookUrl;
+    process.env.DISCORD_WEBHOOK_SENIOR = sharedWebhookUrl;
+
+    await pubRepo.syncChannels([
+      {
+        id: "channel_junior",
+        name: "junior",
+        category: "seniority",
+        envKey: "DISCORD_WEBHOOK_JUNIOR",
+        color: 1,
+      },
+      {
+        id: "channel_senior",
+        name: "senior",
+        category: "seniority",
+        envKey: "DISCORD_WEBHOOK_SENIOR",
+        color: 2,
+      },
+    ]);
+
+    await jobRepo.upsertJob(sampleJob);
+    await pubRepo.enqueuePublication(sampleJob.id, "channel_junior");
+    await pubRepo.enqueuePublication(sampleJob.id, "channel_senior");
+
+    let discordCallCount = 0;
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("discord.com")) {
+        discordCallCount++;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ id: "shared_msg_123" }),
+          json: async () => ({ id: "shared_msg_123" }),
+        });
+      }
+      return Promise.reject(new Error("Unknown URL"));
+    });
+
+    try {
+      const livePublisher = new PublisherService(pubRepo, false, 0);
+      const summary = await livePublisher.runPublication();
+
+      // O Discord deve ter recebido apenas UMA mensagem física
+      expect(discordCallCount).toBe(1);
+      expect(summary.totalSent).toBe(1);
+      expect(summary.totalSkipped).toBe(1);
+
+      // Ambas as publicações no banco devem constar como SENT
+      const pubJunior = await poolInstance.query(
+        "SELECT status, discord_message_id FROM publications WHERE channel_id = 'channel_junior'",
+      );
+      const pubSenior = await poolInstance.query(
+        "SELECT status, discord_message_id FROM publications WHERE channel_id = 'channel_senior'",
+      );
+
+      expect(pubJunior.rows[0].status).toBe("SENT");
+      expect(pubSenior.rows[0].status).toBe("SENT");
+      expect(
+        pubJunior.rows[0].discord_message_id === "shared_msg_123" ||
+          pubSenior.rows[0].discord_message_id === "shared_msg_123",
+      ).toBe(true);
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
 });

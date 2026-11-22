@@ -94,7 +94,7 @@ export class PublicationRepository {
       WHERE p.channel_id = $1
         AND (
           p.status IN ('PENDING', 'RETRY')
-          OR (p.status = 'SENDING' AND p.scheduled_at <= NOW() - interval '5 minutes')
+          OR (p.status = 'SENDING' AND p.scheduled_at <= NOW())
         )
         AND p.scheduled_at <= NOW()
         AND j.status = 'active'
@@ -176,7 +176,7 @@ export class PublicationRepository {
           WHERE p.channel_id = $1
             AND (
               p.status IN ('PENDING', 'RETRY')
-              OR (p.status = 'SENDING' AND p.scheduled_at <= NOW() - interval '5 minutes')
+              OR (p.status = 'SENDING' AND p.scheduled_at <= NOW())
             )
             AND p.scheduled_at <= NOW()
             AND j.status = 'active'
@@ -210,7 +210,10 @@ export class PublicationRepository {
           FROM publications p
           JOIN jobs j ON j.id = p.job_id
           WHERE p.channel_id = $1
-            AND p.status IN ('PENDING', 'RETRY')
+            AND (
+              p.status IN ('PENDING', 'RETRY')
+              OR (p.status = 'SENDING' AND p.scheduled_at <= NOW())
+            )
             AND p.scheduled_at <= NOW()
             AND j.status = 'active'
             AND j.is_historical = false
@@ -364,5 +367,45 @@ export class PublicationRepository {
       [channelId],
     );
     return parseInt(res.rows[0]?.count ?? "0", 10);
+  }
+
+  async isJobAlreadySentToWebhookUrl(
+    jobId: string,
+    targetWebhookUrl: string,
+    channels: DiscordChannelConfig[],
+  ): Promise<boolean> {
+    const matchingChannelIds = channels
+      .filter((c) => {
+        const url = (process.env[c.envKey] || "").trim();
+        return url.length > 0 && url === targetWebhookUrl;
+      })
+      .map((c) => c.id);
+
+    if (matchingChannelIds.length <= 1) {
+      return false;
+    }
+
+    try {
+      const res = await this.pool.query(
+        `
+        SELECT 1 FROM publications
+        WHERE job_id = $1
+          AND channel_id = ANY($2::varchar[])
+          AND status = 'SENT'
+        LIMIT 1;
+      `,
+        [jobId, matchingChannelIds],
+      );
+
+      return (res.rowCount ?? 0) > 0;
+    } catch {
+      const res = await this.pool.query(
+        `SELECT channel_id, status FROM publications WHERE job_id = $1 AND status = 'SENT'`,
+        [jobId],
+      );
+      return res.rows.some((r: any) =>
+        matchingChannelIds.includes(r.channel_id),
+      );
+    }
   }
 }

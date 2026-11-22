@@ -86,7 +86,7 @@ export function classifyAndNormalizeJob(
     technologies: techResult.technologies,
     salaryMin: input.salaryMin ?? null,
     salaryMax: input.salaryMax ?? null,
-    currency: input.currency ?? null,
+    currency: input.currency ?? (locResult.isUsdSalary ? "USD" : null),
     country: locResult.country,
     eligibleRegions: locResult.eligibleRegions,
     employmentType: input.employmentType ?? null,

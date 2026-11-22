@@ -16,14 +16,19 @@ export interface PublisherSummary {
 export class PublisherService {
   private discordClient: DiscordClient;
   private spamFilter: SpamFilter;
+  private maxRetries: number;
 
   constructor(
     private pubRepo: PublicationRepository = new PublicationRepository(),
     private isDryRun: boolean = false,
     private minIntervalMs: number = 800,
+    maxRetries?: number,
   ) {
     this.discordClient = new DiscordClient(this.isDryRun, this.minIntervalMs);
     this.spamFilter = new SpamFilter();
+    this.maxRetries =
+      maxRetries ??
+      (process.env.MAX_RETRIES ? parseInt(process.env.MAX_RETRIES, 10) : 3);
   }
 
   async runPublication(): Promise<PublisherSummary> {
@@ -56,22 +61,25 @@ export class PublisherService {
       `Iniciando ciclo de publicação para ${channels.length} canais Discord... (DRY_RUN=${isDryRun}, PUBLICATION_ENABLED=${isPublicationEnabled})`,
     );
 
-    const defaultWebhook = process.env.DISCORD_WEBHOOK_DEFAULT || "";
+    // Rastreador de envios por webhook físico para evitar que uma mesma vaga
+    // seja postada mais de uma vez quando múltiplos canais lógicos compartilham o mesmo webhook
+    const sentWebhookJobKeys = new Set<string>();
 
     for (const channel of channels) {
       if (!channel.enabled) {
         continue;
       }
 
-      // 1. Resolve o webhook configurado para este canal
-      const channelWebhook = (
-        process.env[channel.envKey] || defaultWebhook
-      ).trim();
+      // 1. Resolve o webhook configurado especificamente para este canal
+      // NUNCA redireciona silenciosamente categorias ausentes para um único canal padrão
+      const channelWebhook = (process.env[channel.envKey] || "").trim();
 
-      if (!channelWebhook && !isDryRun) {
-        logger.warn(
-          `Canal ${channel.name} (${channel.id}) não possui webhook configurado em ${channel.envKey} nem DISCORD_WEBHOOK_DEFAULT. Pulando envio deste canal.`,
-        );
+      if (!channelWebhook) {
+        if (!isDryRun) {
+          logger.warn(
+            `[CANAL PENDENTE] Canal "${channel.name}" (${channel.id}) não possui webhook configurado em ${channel.envKey}. Publicação mantida pendente na fila para este canal.`,
+          );
+        }
         continue;
       }
 
@@ -105,6 +113,40 @@ export class PublisherService {
       for (const item of pendings) {
         summary.totalAttempted++;
         const pubId = item.publication.id!;
+        const webhookJobKey = `${channelWebhook}::${item.job.id}`;
+
+        // Prevenção de duplicatas quando canais lógicos compartilham o mesmo webhook URL
+        if (sentWebhookJobKeys.has(webhookJobKey)) {
+          logger.info(
+            `[DEDUP WEBHOOK COMPARTILHADO] Vaga "${item.job.title}" já enviada ao mesmo webhook neste ciclo (${channel.name}). Evitando duplicata.`,
+          );
+          if (!isDryRun) {
+            await this.pubRepo.updatePublicationStatus(pubId, "SENT", {
+              discordMessageId: "shared_webhook_dedup",
+            });
+          }
+          summary.totalSkipped++;
+          continue;
+        }
+
+        const alreadySentToWebhook =
+          await this.pubRepo.isJobAlreadySentToWebhookUrl(
+            item.job.id,
+            channelWebhook,
+            channels,
+          );
+        if (alreadySentToWebhook) {
+          logger.info(
+            `[DEDUP HISTÓRICO WEBHOOK] Vaga "${item.job.title}" já consta como enviada a este webhook anteriormente. Marcando publicação como resolvida sem duplicar mensagem.`,
+          );
+          if (!isDryRun) {
+            await this.pubRepo.updatePublicationStatus(pubId, "SENT", {
+              discordMessageId: "shared_webhook_dedup",
+            });
+          }
+          summary.totalSkipped++;
+          continue;
+        }
 
         const embedPayload = buildJobEmbed(item.job, channel);
         const result = await this.discordClient.sendWebhook(
@@ -116,6 +158,7 @@ export class PublisherService {
         // e não poluímos o histórico. As publicações permanecem intactas em PENDING.
         if (isDryRun) {
           if (result.success) {
+            sentWebhookJobKeys.add(webhookJobKey);
             summary.totalSent++;
             logger.info(
               `[DRY-RUN] Simulação: Vaga "${item.job.title}" seria publicada no canal ${channel.name}.`,
@@ -139,22 +182,29 @@ export class PublisherService {
           result.durationMs,
         );
 
-        if (result.success) {
+        // Garantia de confirmação externa estrita: status 200/204 e messageId comprovado
+        const isConfirmedByDiscord =
+          result.success &&
+          result.statusCode !== undefined &&
+          (result.statusCode === 200 || result.statusCode === 204) &&
+          Boolean(result.messageId);
+
+        if (isConfirmedByDiscord) {
+          sentWebhookJobKeys.add(webhookJobKey);
           summary.totalSent++;
           await this.pubRepo.updatePublicationStatus(pubId, "SENT", {
             discordMessageId: result.messageId,
           });
           logger.info(
-            `Vaga "${item.job.title}" publicada com sucesso no canal ${channel.name}.`,
+            `Vaga "${item.job.title}" publicada com sucesso no canal ${channel.name} (Message ID: ${result.messageId}).`,
           );
         } else {
           summary.totalFailed++;
-          const maxRetries = 3;
           const currentAttempts = item.publication.attemptsCount + 1;
 
-          if (currentAttempts >= maxRetries) {
+          if (currentAttempts >= this.maxRetries) {
             await this.pubRepo.updatePublicationStatus(pubId, "FAILED", {
-              lastError: result.error,
+              lastError: result.error || "Sem confirmação externa do Discord",
             });
             logger.error(
               `Publicação ${pubId} falhou definitivamente após ${currentAttempts} tentativas: ${result.error}`,
@@ -163,7 +213,7 @@ export class PublisherService {
             const retrySeconds =
               result.retryAfterSeconds ?? Math.pow(2, currentAttempts) * 60;
             await this.pubRepo.updatePublicationStatus(pubId, "RETRY", {
-              lastError: result.error,
+              lastError: result.error || "Sem confirmação externa do Discord",
               retryInSeconds: retrySeconds,
             });
             logger.warn(

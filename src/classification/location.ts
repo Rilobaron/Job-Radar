@@ -40,21 +40,25 @@ const LATAM_PATTERNS = [
 
 // Padrões de restrição regional externa estrita (vagas remotas restritas a outros países)
 const REGIONAL_RESTRICTION_PATTERNS = [
-  /\b(?:united states|usa?|u\.s\.a?|north america)\s+only\b/i,
+  /\b(?:united states|usa?|u\.s\.a?|north america)\s+(?:only|citizens?|based|residents?)\b/i,
   /\b(?:us|usa)\s+(?:only|citizens?|based|residents?)\b/i,
-  /\bmust\s+reside\s+in\s+(?:the\s+)?(?:us|united states|uk|canada|europe)\b/i,
+  /\bmust\s+reside\s+in\s+(?:the\s+)?(?:us|united states|uk|canada|europe|germany|france)\b/i,
   /\b(?:emea|apac|europe|uk|canada|australia)\s+only\b/i,
   /\b(?:uk|canada|germany|france|netherlands|spain|ireland)\s+residents?\b/i,
+  /\bno\s+international\s+(?:relocation|applicants?|hiring)\b/i,
+  /\bauthorized\s+to\s+work\s+in\s+(?:the\s+)?(?:us|united states|uk|canada)\s+without\s+sponsorship\b/i,
 ];
 
 const GLOBAL_REMOTE_PATTERNS = [
-  /\b(?:anywhere|global|worldwide|all\s+regions|work\s+from\s+anywhere)\b/i,
+  /\b(?:anywhere|global|worldwide|all\s+regions|work\s+from\s+anywhere|remote\s*-\s*global|remote\s*-\s*worldwide)\b/i,
 ];
 
 const USD_PATTERNS = [
   /\b(?:usd|u\.s\.d\.)\b/i,
   /\b(?:d[óo]lar(?:es)?|dollars?)\b/i,
-  /(?<!R)\$\s*\d{1,3}(?:[.,]\d{3})*(?:\s*(?:k|thousand|\/year|\/mo|\/month|\/m[êe]s|ano))?/i,
+  /\bus\s*\$\s*\d{1,3}(?:[.,]\d{3})*(?:\s*(?:k|thousand|\/year|\/yr|\/mo|\/month|\/m[êe]s|ano))?/i,
+  /\bu\$s\s*\d{1,3}(?:[.,]\d{3})*/i,
+  /(?<![RrCcAaNnZzHh][A-Za-z]?\s*)\$\s*\d{1,3}(?:[.,]\d{3})*(?:\s*(?:k|thousand|\/year|\/yr|\/mo|\/month|\/m[êe]s|ano))?/i,
   /\b\d{1,3}(?:[.,]\d{3})*\s*(?:usd|dollars?)\b/i,
 ];
 
@@ -128,31 +132,55 @@ export function classifyLocation(
     }
   }
 
-  // 6. Internacional
-  const isInternational = !isBrazil || isGlobalRemote || isLatam;
+  // 6. Internacional aberta:
+  // Vagas remotas internacionais abertas para o público global/brasileiro:
+  // DEVE ser remota, NÃO possuir restrições regionais exclusivas de outros países (ex: US Only, UK Only)
+  // e ser explicitamente Global/Worldwide, LATAM, ou sem restrição territorial restritiva.
+  let isInternational = false;
+  if (remoteType === "remote" && !hasForeignRegionalRestriction) {
+    if (isGlobalRemote || isLatam) {
+      isInternational = true;
+    } else if (!isBrazil && !isUsExplicitLocation) {
+      isInternational = true;
+    }
+  }
 
   // 7. Vagas em Dólar (USD) - EXIGE evidência explícita comprovada
   let isUsdSalary = false;
   let usdEvidence: string | undefined;
 
-  // Se a moeda declarada for expressamente USD ou $
-  if (currency && (currency.toUpperCase() === "USD" || currency === "$")) {
+  // Se a moeda declarada for expressamente USD ou $ ou US$
+  if (
+    currency &&
+    (currency.toUpperCase() === "USD" ||
+      currency === "$" ||
+      currency.toUpperCase() === "US$")
+  ) {
     isUsdSalary = true;
     usdEvidence = `Moeda informada no contrato: ${currency}`;
-  } else if (currency && currency.toUpperCase() !== "USD" && currency !== "$") {
-    // Moeda declarada é outra (BRL, EUR, GBP) - não considerar USD
+  } else if (
+    currency &&
+    currency.toUpperCase() !== "USD" &&
+    currency !== "$" &&
+    currency.toUpperCase() !== "US$"
+  ) {
+    // Moeda declarada é outra (BRL, EUR, GBP, CAD, etc.) - não considerar USD
     isUsdSalary = false;
   } else {
+    const hasExplicitBrl = /\b(?:r\$|brl|reais)\b/i.test(combined);
     for (const p of USD_PATTERNS) {
       const match = combined.match(p);
       if (match) {
-        const matchIndex = match.index ?? 0;
-        const prefix = combined.slice(Math.max(0, matchIndex - 3), matchIndex);
-        if (!prefix.toUpperCase().includes("R$")) {
-          isUsdSalary = true;
-          usdEvidence = `Evidência no texto da vaga: "${match[0]}"`;
-          break;
+        // Se houver menção a R$/BRL no texto, só aceita se o match for especificamente USD ou dólares
+        if (
+          hasExplicitBrl &&
+          !/\b(?:usd|u\.s\.d\.|d[óo]lar|dollars?)\b/i.test(match[0])
+        ) {
+          continue;
         }
+        isUsdSalary = true;
+        usdEvidence = `Evidência no texto da vaga: "${match[0]}"`;
+        break;
       }
     }
   }

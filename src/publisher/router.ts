@@ -37,7 +37,9 @@ export class JobRouter {
         matchedChannelIds.add("channel_brazil_remote");
       }
 
-      if (job.eligibleRegions.includes("International") || !isBrazilEligible) {
+      // Roteia para internacional APENAS se a vaga for elegível internacionalmente/globalmente
+      // e NÃO estiver restrita exclusivamente a outro país específico
+      if (job.eligibleRegions.includes("International")) {
         matchedChannelIds.add("channel_international");
       }
     }
