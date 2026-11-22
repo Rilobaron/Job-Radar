@@ -1,0 +1,58 @@
+[
+  {
+    "id": "channel_intern",
+    "name": "estagio-trainee",
+    "category": "seniority",
+    "description": "Vagas de estágio e programas de trainee de tecnologia",
+    "envKey": "DISCORD_WEBHOOK_INTERN",
+    "color": 3447003
+  },
+  {
+    "id": "channel_junior",
+    "name": "junior",
+    "category": "seniority",
+    "description": "Vagas para desenvolvedores nível júnior / entry level",
+    "envKey": "DISCORD_WEBHOOK_JUNIOR",
+    "color": 3066993
+  },
+  {
+    "id": "channel_mid",
+    "name": "pleno",
+    "category": "seniority",
+    "description": "Vagas para nível pleno / mid-level",
+    "envKey": "DISCORD_WEBHOOK_MID",
+    "color": 15844367
+  },
+  {
+    "id": "channel_senior",
+    "name": "senior",
+    "category": "seniority",
+    "description": "Vagas sênior, lead, principal e staff engineer",
+    "envKey": "DISCORD_WEBHOOK_SENIOR",
+    "color": 15158332
+  },
+  {
+    "id": "channel_brazil_remote",
+    "name": "brasil-remoto",
+    "category": "region",
+    "description": "Vagas de trabalho 100% remoto para residentes no Brasil",
+    "envKey": "DISCORD_WEBHOOK_BRAZIL_REMOTE",
+    "color": 2067276
+  },
+  {
+    "id": "channel_international",
+    "name": "internacional",
+    "category": "region",
+    "description": "Vagas remotas internacionais ou LATAM elegíveis",
+    "envKey": "DISCORD_WEBHOOK_INTERNATIONAL",
+    "color": 10181046
+  },
+  {
+    "id": "channel_usd",
+    "name": "vagas-em-dolar",
+    "category": "compensation",
+    "description": "Vagas com evidência explícita de remuneração em USD ($)",
+    "envKey": "DISCORD_WEBHOOK_USD",
+    "color": 16766720
+  }
+]

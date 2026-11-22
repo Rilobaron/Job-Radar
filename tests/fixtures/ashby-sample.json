@@ -1,0 +1,21 @@
+{
+  "jobs": [
+    {
+      "id": "ashby_job_789",
+      "title": "Staff Backend Engineer",
+      "publishedAt": "2026-03-03T15:30:00.000Z",
+      "isListed": true,
+      "isRemote": true,
+      "workplaceType": "remote",
+      "jobUrl": "https://jobs.ashbyhq.com/linear/ashby_job_789",
+      "applyUrl": "https://jobs.ashbyhq.com/linear/ashby_job_789/application",
+      "descriptionPlain": "Linear is looking for a Staff Backend Engineer. Our stack includes TypeScript, Node.js, and PostgreSQL. We pay in USD with competitive equity.",
+      "location": "Global",
+      "compensation": {
+        "minValue": 180000,
+        "maxValue": 220000,
+        "currencyCode": "USD"
+      }
+    }
+  ]
+}

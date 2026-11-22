@@ -1,0 +1,45 @@
+name: Publicação Automatizada no Discord
+
+on:
+  schedule:
+    # A cada 30 minutos (deslocado 5 minutos após a coleta)
+    - cron: "5,35 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: jobradar-publisher
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publicar Vagas Pendentes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Instalar Dependências
+        run: npm ci
+
+      - name: Disparar Publicações
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DISCORD_WEBHOOK_DEFAULT: ${{ secrets.DISCORD_WEBHOOK_DEFAULT }}
+          DISCORD_WEBHOOK_INTERN: ${{ secrets.DISCORD_WEBHOOK_INTERN }}
+          DISCORD_WEBHOOK_JUNIOR: ${{ secrets.DISCORD_WEBHOOK_JUNIOR }}
+          DISCORD_WEBHOOK_MID: ${{ secrets.DISCORD_WEBHOOK_MID }}
+          DISCORD_WEBHOOK_SENIOR: ${{ secrets.DISCORD_WEBHOOK_SENIOR }}
+          DISCORD_WEBHOOK_BRAZIL_REMOTE: ${{ secrets.DISCORD_WEBHOOK_BRAZIL_REMOTE }}
+          DISCORD_WEBHOOK_INTERNATIONAL: ${{ secrets.DISCORD_WEBHOOK_INTERNATIONAL }}
+          DISCORD_WEBHOOK_USD: ${{ secrets.DISCORD_WEBHOOK_USD }}
+          DRY_RUN: ${{ secrets.DRY_RUN || 'false' }}
+          LOG_LEVEL: info
+        run: npm run publish

@@ -1,0 +1,26 @@
+{
+  "jobs": [
+    {
+      "id": 10101,
+      "title": "Senior Frontend Engineer (React/TypeScript)",
+      "absolute_url": "https://boards.greenhouse.io/gitlab/jobs/10101",
+      "location": {
+        "name": "Remote, Global"
+      },
+      "updated_at": "2026-03-01T12:00:00Z",
+      "first_published": "2026-03-01T12:00:00Z",
+      "content": "<p>We are seeking a <strong>Senior Frontend Engineer</strong> with strong experience in <strong>TypeScript</strong> and <strong>React</strong>. Salary range: $120,000 - $160,000 USD per year. You will work with PostgreSQL and GraphQL.</p>"
+    },
+    {
+      "id": 10102,
+      "title": "Desenvolvedor Júnior",
+      "absolute_url": "https://boards.greenhouse.io/gitlab/jobs/10102",
+      "location": {
+        "name": "São Paulo, Brazil"
+      },
+      "updated_at": "2026-03-02T10:00:00Z",
+      "first_published": "2026-03-02T10:00:00Z",
+      "content": "<p>Oportunidade para Desenvolvedor Júnior em Node.js e Docker. Modelo 100% remoto no Brasil.</p>"
+    }
+  ]
+}

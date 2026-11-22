@@ -1,0 +1,42 @@
+[
+  {
+    "id": "src_greenhouse_gitlab",
+    "name": "GitLab",
+    "provider": "greenhouse",
+    "identifier": "gitlab",
+    "enabled": true,
+    "baseUrl": "https://boards-api.greenhouse.io/v1/boards/gitlab/jobs?content=true"
+  },
+  {
+    "id": "src_greenhouse_canonical",
+    "name": "Canonical",
+    "provider": "greenhouse",
+    "identifier": "canonical",
+    "enabled": true,
+    "baseUrl": "https://boards-api.greenhouse.io/v1/boards/canonical/jobs?content=true"
+  },
+  {
+    "id": "src_lever_palantir",
+    "name": "Palantir",
+    "provider": "lever",
+    "identifier": "palantir",
+    "enabled": true,
+    "baseUrl": "https://api.lever.co/v0/postings/palantir?mode=json"
+  },
+  {
+    "id": "src_ashby_linear",
+    "name": "Linear",
+    "provider": "ashby",
+    "identifier": "linear",
+    "enabled": true,
+    "baseUrl": "https://api.ashbyhq.com/posting-api/job-board/linear"
+  },
+  {
+    "id": "src_ashby_ramp",
+    "name": "Ramp",
+    "provider": "ashby",
+    "identifier": "ramp",
+    "enabled": true,
+    "baseUrl": "https://api.ashbyhq.com/posting-api/job-board/ramp"
+  }
+]

@@ -1,0 +1,55 @@
+{
+  "name": "job-radar",
+  "version": "1.0.1",
+  "description": "Sistema open source de agregação e distribuição automatizada de vagas de tecnologia para Discord",
+  "main": "dist/src/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"migrations/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"migrations/**/*.ts\"",
+    "collect": "tsx src/cli/index.ts collect",
+    "publish": "tsx src/cli/index.ts publish",
+    "bootstrap": "tsx src/cli/index.ts bootstrap",
+    "dry-run": "tsx src/cli/index.ts dry-run",
+    "status": "tsx src/cli/index.ts status",
+    "health": "tsx src/cli/index.ts health",
+    "migrate": "tsx migrations/runner.ts"
+  },
+  "keywords": [
+    "jobs",
+    "discord",
+    "greenhouse",
+    "lever",
+    "ashby",
+    "automation",
+    "typescript"
+  ],
+  "author": "JobRadar Contributors",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^18.0.10",
+    "pg": "^8.23.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.20.0",
+    "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
+    "@typescript-eslint/eslint-plugin": "^8.72.2",
+    "@typescript-eslint/parser": "^8.72.2",
+    "eslint": "^9.20.0",
+    "pg-mem": "^3.0.14",
+    "prettier": "^3.10.1",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0"
+  },
+  "overrides": {
+    "minimatch": "^11.0.8"
+  }
+}

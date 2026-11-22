@@ -1,0 +1,28 @@
+[
+  {
+    "id": "lever_abc_123",
+    "text": "Fullstack Software Engineer - Pleno",
+    "hostedUrl": "https://jobs.lever.co/palantir/lever_abc_123",
+    "applyUrl": "https://jobs.lever.co/palantir/lever_abc_123/apply",
+    "createdAt": 1772540000000,
+    "workplaceType": "hybrid",
+    "descriptionPlain": "Estamos procurando um engenheiro pleno para atuar com Go, Python e Kubernetes.",
+    "categories": {
+      "location": "Curitiba, Brazil",
+      "commitment": "Full-time",
+      "team": "Engineering"
+    }
+  },
+  {
+    "id": "lever_trainee_456",
+    "text": "Programa de Estágio Tech 2026",
+    "hostedUrl": "https://jobs.lever.co/palantir/lever_trainee_456",
+    "createdAt": 1772545000000,
+    "workplaceType": "remote",
+    "descriptionPlain": "Venha estagiar com nosso time de tecnologia. Conhecimento em JavaScript e Git.",
+    "categories": {
+      "location": "Remote, Brazil",
+      "commitment": "Internship"
+    }
+  }
+]

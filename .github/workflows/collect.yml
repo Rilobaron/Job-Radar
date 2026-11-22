@@ -1,0 +1,36 @@
+name: Coleta Automatizada de Vagas
+
+on:
+  schedule:
+    # A cada 30 minutos
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: jobradar-collector
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    name: Executar Coleta
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Instalar Dependências
+        run: npm ci
+
+      - name: Executar Coletor de Vagas
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          LOG_LEVEL: info
+        run: npm run collect
